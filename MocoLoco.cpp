@@ -92,21 +92,22 @@ int main(int argc, char *argv[]) {
     double increm = double(1)/double(len[i]);
     //For each position in the sequence
     for (unsigned int j = 0; j < len[i]; j++) {
-      int barWidth = 70;
-      cout << "[";
-      int pos = barWidth * progress;
-      for (int i = 0; i < barWidth; ++i) {
-        if (i < pos) cout << "=";
-        else if (i == pos) cout << ">";
-        else cout << " ";
-      }
-      bar = int(progress * 100);
-      if(bar >= 97){
-        bar = 100;
-      }
-      cout << "] " << bar << " %\r";
-      cout.flush();    
-      progress += increm;
+      cout << "POSITION " << j+1 << endl << endl;
+      // int barWidth = 70;
+      // cout << "[";
+      // int pos = barWidth * progress;
+      // for (int i = 0; i < barWidth; ++i) {
+      //   if (i < pos) cout << "=";
+      //   else if (i == pos) cout << ">";
+      //   else cout << " ";
+      // }
+      // bar = int(progress * 100);
+      // if(bar >= 97){
+      //   bar = 100;
+      // }
+      // cout << "] " << bar << " %\r";
+      // cout.flush();    
+      // progress += increm;
 
       double Pval = 0;
       unsigned int counter = 0;
@@ -1363,7 +1364,7 @@ void z_test_class::oligos_vector_creation_PWM(vector<BedClass::bed_s> &GEP) {
 
       // Select the best scores between FWD and REV strand (for each position)
       check_best_strand_oligo();
-
+      // cout << "Score: " << oligo_scores_horizontal_BEST[LocalPosition - 1] << endl << endl;
       // Fill the local scores vector with scores found in position where the
       // matrix has been generated
       all_local_scores.emplace_back(oligo_scores_horizontal_BEST[LocalPosition - 1]);
@@ -1380,6 +1381,7 @@ void z_test_class::oligos_vector_creation_PWM(vector<BedClass::bed_s> &GEP) {
       all_global_scores.insert(all_global_scores.end(),
                                oligo_scores_horizontal_FWD.begin(),
                                oligo_scores_horizontal_FWD.end());
+      // cout << endl << "Score: " << oligo_scores_horizontal_FWD[LocalPosition - 1] << endl << endl;
     }
 
     // Clearing of horizontal best score for the next sequence cycle
@@ -1401,6 +1403,11 @@ void z_test_class::check_best_strand_oligo() {
 
 // Function to calculate all the parameters useul to z-score calculation
 void z_test_class::z_score_parameters_calculation() {
+  // cout << "\nLocal_scores:\n";
+  // PrintVector(all_local_scores);
+  // cout << "\n\nGlobal_scores:\n";
+  // PrintVector(all_global_scores);
+  // cout << endl << endl;
   // PROFILE_FUNCTION();
   double local_sum =
       accumulate(all_local_scores.begin(), all_local_scores.end(), 0.0);
@@ -1415,22 +1422,43 @@ void z_test_class::z_score_parameters_calculation() {
                     all_local_scores.begin(), 0.0);
   global_mean = global_sum / all_global_scores.size();
   local_mean = local_sum / all_local_scores.size();
-  global_dev_std = sqrt(tot_sq_sum_global / all_global_scores.size() -
-                        global_mean * global_mean);
-  local_dev_std = sqrt(tot_sq_sum_local / all_local_scores.size() -
-                       local_mean * local_mean);   
+  // global_dev_std = sqrt(tot_sq_sum_global / all_global_scores.size() -
+  //                       global_mean * global_mean);
+  // local_dev_std = sqrt(tot_sq_sum_local / all_local_scores.size() -
+  //                      local_mean * local_mean);   
+  
+  double global_accum = 0.0;
+  for_each (begin(all_global_scores), end(all_global_scores), [&](const double d) {
+    global_accum += (d - global_mean) * (d - global_mean);
+  });
+  cout << "Global_acc: " << global_accum << "\n\n";
+  global_dev_std = sqrt(global_accum / (all_global_scores.size()-1));
+double local_accum = 0.0;
+  for_each (begin(all_local_scores), end(all_local_scores), [&](const double d) {
+    local_accum += (d - local_mean) * (d - local_mean);
+  });
+  local_dev_std = sqrt(local_accum / (all_local_scores.size()-1));
+  cout << "Gobal_mean " << global_mean << "\tLocal_mean " << local_mean <<
+       "\tGlobal_dev " << global_dev_std << "\tLocal_dev " << local_dev_std << endl;
+  cout << "All local scores " << all_local_scores.size() << "\tAll global scores " << all_global_scores.size() << endl << endl;
 }
 
 // Z-score calculation function
 void z_test_class::z_score_calculation(unsigned int len) {
   // PROFILE_FUNCTION();
-  z_score = ((global_mean - local_mean) /
+  cout << "Inside z_score calculation" << endl;
+  cout << "Gobal_mean " << global_mean << "\tLocal_mean " << local_mean <<
+       "\tGlobal_dev " << global_dev_std << "\tsqrt(N) " << sqrt(all_local_scores.size()) << endl;
+  z_score = (((local_mean - global_mean)) /
              (global_dev_std / sqrt(all_local_scores.size())));
+  cout << "Z_score " << z_score << "\t";
+  //z_score = ((global_mean - local_mean) /
+  //           (global_dev_std / sqrt(all_local_scores.size())));
   const double Z = z_score;
-  Zpvalue = gsl_cdf_ugaussian_P(Z);
+  Zpvalue = gsl_cdf_ugaussian_Q(Z);
 
   Zpvalue = check_p_value(Zpvalue, "");
-
+  cout << "Z_pvalue " << Zpvalue << endl<<endl;
   Zpvalue_bonf = Zpvalue * len;
 }
 
