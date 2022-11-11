@@ -1403,11 +1403,14 @@ void z_test_class::check_best_strand_oligo() {
 // Function to calculate all the parameters useul to z-score calculation
 void z_test_class::z_score_parameters_calculation() {
   // PROFILE_FUNCTION();
+  //Local scores summation
   double local_sum =
       accumulate(all_local_scores.begin(), all_local_scores.end(), 0.0);
+  //Global scores summation
   double global_sum =
       accumulate(all_global_scores.begin(), all_global_scores.end(), 0.0);
 
+  //Mean calculation
   global_mean = global_sum / all_global_scores.size();
   local_mean = local_sum / all_local_scores.size();
 
@@ -1417,10 +1420,13 @@ void z_test_class::z_score_parameters_calculation() {
   local_dev_std = sqrt(tot_sq_sum_local / all_local_scores.size() -
                        local_mean * local_mean);   
   */
+  
   double global_accum = 0.0;
+  //Calculation of summation of (mean - score)^2 in global scores
   for_each (begin(all_global_scores), end(all_global_scores), [&](const double d) {
     global_accum += (d - global_mean) * (d - global_mean);
   });
+  //Global deviation standard calculation
   global_dev_std = sqrt(global_accum / (all_global_scores.size()));
 
   double local_accum = 0.0;
@@ -1440,12 +1446,15 @@ void z_test_class::z_score_calculation(unsigned int len) {
   //           (global_dev_std / sqrt(all_local_scores.size())));
   
   const double Z = z_score;
-  Zpvalue = gsl_cdf_ugaussian_P(Z);
-
-  Zpvalue = check_p_value(Zpvalue, "");
+  Zpvalue = gsl_cdf_ugaussian_Q(Z);
   Zpvalue_bonf = Zpvalue * len;
-  Zpvalue_Log10 = abs(log10(Zpvalue));
-  Zpvalue_bonf_Log10 = abs(log10(Zpvalue_bonf));
+  
+  /*The pvalues are in a range 0.5 - 0, I used the next line to see 
+  the pvalue in a range 1 - 0, but it is commented because I don't
+  know if it's correct*/
+
+  // Zpvalue = Zpvalue * 2;
+  Zpvalue = check_p_value(Zpvalue, "");
 }
 
 // If the p value is rounded to 0 assigne it a standar low value
@@ -1612,20 +1621,21 @@ void print_debug_Z_scores(ofstream &outfile, unsigned int j,
   for (unsigned int position = 0; position < Z_TEST_MATRIX[j].size();
        position++) {
 
-
-
+    double Zpvalue_Log10 = abs(log10(Z_TEST_MATRIX[j][position].Zpvalue));
+    double bonferroni_Log10 = abs(log10(Z_TEST_MATRIX[j][position].Zpvalue_bonf));
+    
     // best_oligo = HAMMING_MATRIX[j][LocalPosition-1].real_best_oligo;
     outfile << Z_TEST_MATRIX[j][position].LocalPosition << "\t"
-            << seed_oligo[position] << "\t" 
+            << seed_oligo[position] << "\t"
             << Z_TEST_MATRIX[j][position].local_mean << "\t"
             << Z_TEST_MATRIX[j][position].global_mean << "\t"
             << Z_TEST_MATRIX[j][position].local_dev_std << "\t"
             << Z_TEST_MATRIX[j][position].global_dev_std << "\t"
             << Z_TEST_MATRIX[j][position].z_score << "\t"
             << Z_TEST_MATRIX[j][position].Zpvalue << "\t" 
-            << Z_TEST_MATRIX[j][position].Zpvalue_Log10 << "\t" 
+            << Zpvalue_Log10 << "\t"
             << Z_TEST_MATRIX[j][position].Zpvalue_bonf << "\t" 
-            << Z_TEST_MATRIX[j][position].Zpvalue_bonf_Log10 << "\t"
+            << bonferroni_Log10 << "\t"
             << H_HAMMING_MATRIX[j][position].freq1 << endl;
   }
 }

@@ -341,9 +341,7 @@ public:
 
   double z_score;
   double Zpvalue;
-  double Zpvalue_bonf;
-  double Zpvalue_Log10;
-  double Zpvalue_bonf_Log10;
+  double Zpvalue_bonf;  
   
   double global_mean;
   double global_dev_std;
