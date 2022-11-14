@@ -92,22 +92,22 @@ int main(int argc, char *argv[]) {
     double increm = double(1)/double(len[i]);
     //For each position in the sequence
     for (unsigned int j = 0; j < len[i]; j++) {
-      int barWidth = 70;
-      cout << "[";
-      int pos = barWidth * progress;
-      for (int i = 0; i < barWidth; ++i) {
-        if (i < pos) cout << "=";
-        else if (i == pos) cout << ">";
-        else cout << " ";
-      }
-      bar = int(progress * 100);
-      if(bar >= 97){
-        bar = 100;
-      }
-      cout << "] " << bar << " %\r";
-      cout.flush();    
-      progress += increm;
-
+      // int barWidth = 70;
+      // cout << "[";
+      // int pos = barWidth * progress;
+      // for (int i = 0; i < barWidth; ++i) {
+      //   if (i < pos) cout << "=";
+      //   else if (i == pos) cout << ">";
+      //   else cout << " ";
+      // }
+      // bar = int(progress * 100);
+      // if(bar >= 97){
+      //   bar = 100;
+      // }
+      // cout << "] " << bar << " %\r";
+      // cout.flush();    
+      // progress += increm;
+      cout << "Position: " << j + 1 << "\n\n";
       double Pval = 0;
       unsigned int counter = 0;
       // Loop for eventually other matrixes that are hidden by the best motif
@@ -339,18 +339,18 @@ void MatrixClass::MatrixLog(vector<vector<double>> &mJasparMatrix) {
 //This function find the maximum and minimum value for each column of the matrix
 void ScoreClass::FindMinMax(vector<vector<double>> &matrix) {
   // PROFILE_FUNCTION();
-  vector<double> max_sum;
+  
   for (unsigned int i = 0; i < matrix[0].size(); i++) {
     vector<double> column;
     for (unsigned int j = 0; j < matrix.size(); j++) {
       column.emplace_back(matrix[j][i]);
     }
     mMinColumnSum.emplace_back(*min_element(column.begin(), column.end()));
-    max_sum.emplace_back(*max_element(column.begin(), column.end()));
+    mMaxColumnSum.emplace_back(*max_element(column.begin(), column.end()));
   }
 
   double min = accumulate(mMinColumnSum.begin(), mMinColumnSum.end(), 0.0);
-  double max = accumulate(max_sum.begin(), max_sum.end(), 0.0);
+  double max = accumulate(mMaxColumnSum.begin(), mMaxColumnSum.end(), 0.0);
   mVectorMinMax.emplace_back(min);
   mVectorMinMax.emplace_back(max);
 }
@@ -1371,6 +1371,8 @@ void z_test_class::oligos_vector_creation_PWM(vector<BedClass::bed_s> &GEP) {
       all_global_scores.insert(all_global_scores.end(),
                                oligo_scores_horizontal_BEST.begin(),
                                oligo_scores_horizontal_BEST.end());
+      // PrintVector(all_local_scores);
+      // cout << "\n";
     }
 
     // If analysis is in Single strand
@@ -1414,17 +1416,10 @@ void z_test_class::z_score_parameters_calculation() {
   global_mean = global_sum / all_global_scores.size();
   local_mean = local_sum / all_local_scores.size();
 
-  /*Old formula for dev_std
-  global_dev_std = sqrt(tot_sq_sum_global / all_global_scores.size() -
-                        global_mean * global_mean);
-  local_dev_std = sqrt(tot_sq_sum_local / all_local_scores.size() -
-                       local_mean * local_mean);   
-  */
-  
   double global_accum = 0.0;
   //Calculation of summation of (mean - score)^2 in global scores
   for_each (begin(all_global_scores), end(all_global_scores), [&](const double d) {
-    global_accum += (d - global_mean) * (d - global_mean);
+    global_accum += pow((d - global_mean),2) /* * (d - global_mean)*/;
   });
   //Global deviation standard calculation
   global_dev_std = sqrt(global_accum / (all_global_scores.size()));
@@ -1434,27 +1429,22 @@ void z_test_class::z_score_parameters_calculation() {
     local_accum += (d - local_mean) * (d - local_mean);
   });
   local_dev_std = sqrt(local_accum / (all_local_scores.size()));
+  
+  s = sqrt(pow(global_dev_std,2) / all_local_scores.size());
 }
 
 // Z-score calculation function
 void z_test_class::z_score_calculation(unsigned int len) {
   // PROFILE_FUNCTION();
 
-  z_score = ((local_mean - global_mean) / global_dev_std );
-  
-  //z_score = ((global_mean - local_mean) /
-  //           (global_dev_std / sqrt(all_local_scores.size())));
+  z_score = (local_mean - global_mean) / s;
   
   const double Z = z_score;
   Zpvalue = gsl_cdf_ugaussian_Q(Z);
   Zpvalue_bonf = Zpvalue * len;
-  
-  /*The pvalues are in a range 0.5 - 0, I used the next line to see 
-  the pvalue in a range 1 - 0, but it is commented because I don't
-  know if it's correct*/
 
-  // Zpvalue = Zpvalue * 2;
   Zpvalue = check_p_value(Zpvalue, "");
+
 }
 
 // If the p value is rounded to 0 assigne it a standar low value

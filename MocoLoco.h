@@ -132,6 +132,7 @@ public:
 
 class ScoreClass {
   vector<double> mMinColumnSum;
+  vector<double> mMaxColumnSum;
   vector<double> mVectorMinMax;
   unsigned int mCentralPosition;
   
@@ -150,8 +151,19 @@ public:
     CenteredStart = StartCoordGEP + mCentralPosition;
   };
   ScoreClass(vector<vector<double>> &LogMatrix, string &Sequence){
+    // cout << "Sequence:\n" << Sequence << "\n\n";
     FindMinMax(LogMatrix);
+    // cout << "mMinColSum: " << mMinColumnSum.size() << endl;
+    // PrintVector(mMinColumnSum);
+    // cout << "mMaxColSum: " << mMaxColumnSum.size() << endl;
+    // PrintVector(mMaxColumnSum);
+    // cout <<"\n";
+    // PrintMatrix(LogMatrix);
+    // cout << "\nMin: " << mVectorMinMax[0] << "\tMax: " << mVectorMinMax[1] << endl;
     SeqScores = Shifting(LogMatrix, Sequence);
+    // PrintVector(SeqScores);
+    // cout << "\n\n";
+    mVectorMinMax.clear();
   };
 };
 
@@ -342,7 +354,7 @@ public:
   double z_score;
   double Zpvalue;
   double Zpvalue_bonf;  
-  
+  double s;
   double global_mean;
   double global_dev_std;
   double local_mean;
@@ -373,7 +385,7 @@ public:
 
     // Calculating z-score and p-value from it
     z_score_calculation(len);
-
+    
     all_local_scores.clear();
     all_global_scores.clear();
     oligo_scores_horizontal_FWD.clear();
